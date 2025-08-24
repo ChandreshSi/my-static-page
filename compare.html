@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Chart Plotter</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 0.5rem;
+            font-family: monospace;
+            margin-bottom: 1rem;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            background-color: #4f46e5;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #4338ca;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>CSV Profit Chart Generator</h1>
+    <textarea id="csvInput" placeholder="Paste your CSV content here..."></textarea>
+    <div class="button-group">
+        <button onclick="plotChart()">Plot Chart</button>
+    </div>
+    <div class="chart-container">
+        <canvas id="profitChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Initial chart instance
+    let myChart = null;
+
+    function plotChart() {
+        const csvText = document.getElementById('csvInput').value;
+        if (!csvText) {
+            alert('Please paste CSV content to plot.');
+            return;
+        }
+
+        const lines = csvText.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        const data = lines.slice(1).map(line => line.split(',').map(v => v.trim()));
+
+        // Find the indices for the columns we need
+        const dateIndex = headers.indexOf('End Date');
+        const weightedProfitIndex = headers.indexOf('Weighted Profit Percentage');
+        const fnguProfitIndex = headers.indexOf('FNGU Profit Percentage');
+
+        if (dateIndex === -1 || weightedProfitIndex === -1 || fnguProfitIndex === -1) {
+            alert('CSV must contain "End Date", "Weighted Profit Percentage", and "FNGU Profit Percentage" columns.');
+            return;
+        }
+
+        const labels = data.map(row => row[dateIndex]);
+        const weightedData = data.map(row => parseFloat(row[weightedProfitIndex]));
+        const fnguData = data.map(row => parseFloat(row[fnguProfitIndex]));
+
+        const ctx = document.getElementById('profitChart').getContext('2d');
+
+        // Destroy the previous chart instance if it exists
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        // Create the new chart
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Weighted Profit Percentage',
+                        data: weightedData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'FNGU Profit Percentage',
+                        data: fnguData,
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+
+    // You can pre-populate the textarea with the provided CSV data
+    window.onload = function() {
+        document.getElementById('csvInput').value = `Start Date,End Date,Weighted Profit Percentage,FNGU Profit Percentage
+08/21/2025,08/22/2025,1.61,4.58
+08/20/2025,08/22/2025,0.93,2.51
+08/19/2025,08/22/2025,0.2,0.0
+08/18/2025,08/22/2025,-1.6,-5.32
+08/15/2025,08/22/2025,-1.55,-5.22
+08/15/2025,08/22/2025,-1.55,-5.22
+08/15/2025,08/22/2025,-1.55,-5.22
+08/14/2025,08/22/2025,-1.46,-5.5
+08/13/2025,08/22/2025,-1.1,-4.71
+08/12/2025,08/22/2025,-1.49,-5.72
+08/11/2025,08/22/2025,-0.25,-2.54
+08/08/2025,08/22/2025,-0.64,-3.23
+08/08/2025,08/22/2025,-0.64,-3.23
+08/08/2025,08/22/2025,-0.64,-3.23
+08/07/2025,08/22/2025,0.51,-0.28
+08/06/2025,08/22/2025,-0.16,-1.46
+08/05/2025,08/22/2025,1.85,3.88
+08/04/2025,08/22/2025,0.67,0.57
+08/01/2025,08/22/2025,2.49,6.0
+08/01/2025,08/22/2025,2.49,6.0
+08/01/2025,08/22/2025,2.49,6.0
+07/31/2025,08/22/2025,2.77,6.86
+07/30/2025,08/22/2025,1.85,3.64
+07/29/2025,08/22/2025,2.2,4.83
+07/28/2025,08/22/2025,1.26,3.0
+07/25/2025,08/22/2025,0.47,1.84
+07/24/2025,08/22/2025,0.54,2.07
+07/23/2025,08/22/2025,0.06,1.4
+07/22/2025,08/22/2025,-0.51,0.22
+07/21/2025,08/22/2025,-1.05,-1.14
+07/18/2025,08/22/2025,-2.19,-3.02
+07/17/2025,08/22/2025,-1.7,-2.14
+07/16/2025,08/22/2025,-1.97,-3.04
+07/15/2025,08/22/2025,-1.5,-2.47
+07/14/2025,08/22/2025,-2.55,-4.43
+07/11/2025,08/22/2025,-2.53,-4.24
+07/10/2025,08/22/2025,-2.12,-3.54
+07/09/2025,08/22/2025,-2.68,-5.39
+07/08/2025,08/22/2025,-2.59,-5.34
+07/07/2025,08/22/2025,-2.17,-4.93
+07/03/2025,08/22/2025,-2.28,-5.06
+07/02/2025,08/22/2025,-2.81,-6.6
+07/01/2025,08/22/2025,-2.4,-5.49
+06/30/2025,08/22/2025,-2.91,-6.83
+06/27/2025,08/22/2025,-2.97,-6.6
+06/26/2025,08/22/2025,-3.45,-8.1
+06/25/2025,08/22/2025,-3.72,-9.35
+06/24/2025,08/22/2025,-3.2,-8.48
+06/23/2025,08/22/2025,-2.99,-7.8
+06/20/2025,08/22/2025,-3.06,-7.75
+06/19/2025,08/22/2025,-3.39,-8.66
+06/18/2025,08/22/2025,-4.12,-10.87
+06/17/2025,08/22/2025,-4.7,-12.39
+06/16/2025,08/22/2025,-4.68,-12.72
+06/13/2025,08/22/2025,-4.77,-13.34
+06/12/2025,08/22/2025,-4.59,-12.87
+06/11/2025,08/22/2025,-4.42,-12.55
+06/10/2025,08/22/2025,-3.91,-11.1
+06/09/2025,08/22/2025,-3.22,-8.99
+06/06/2025,08/22/2025,-3.24,-9.17
+06/05/2025,08/22/2025,-2.91,-8.24
+06/04/2025,08/22/2025,-3.5,-9.76
+06/03/2025,08/22/2025,-3.66,-9.76
+06/02/2025,08/22/2025,-3.92,-10.27
+`;
+        plotChart();
+    };
+
+</script>
+
+</body>
+</html>
